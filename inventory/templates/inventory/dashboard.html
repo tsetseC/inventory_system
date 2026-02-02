@@ -1,0 +1,497 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title> Inventory – Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Dashboard CSS -->
+    <link rel="stylesheet" href="{% static 'inventory/css/inventory_dashboard.css' %}">
+
+    <style>
+        .chart-wrapper {
+            position: relative;
+            height: 260px;
+            max-height: 260px;
+        }
+        canvas { max-width: 100%; }
+
+        .card-title { color: #ffffff !important; font-weight: 600 !important; }
+        .kpi-label { color: #e8f1ff !important; }
+        .page-title, .page-subtitle { color: #ffffff !important; }
+        .text-muted-soft { color: #d5e3ff !important; }
+
+        #forecastYearButtons .btn {
+            border-radius: 999px;
+            padding: 2px 10px;
+        }
+        #forecastYearButtons .btn.active {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            color: #ffffff;
+        }
+
+        /* AI Assistant area */
+        #aiMessages {
+            background-color: rgba(15,23,42,0.95);
+            border-radius: 0.75rem;
+            max-height: 260px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+        }
+        #aiMessages .msg-user { color: #93c5fd; }
+        #aiMessages .msg-assistant { color: #6ee7b7; }
+        #aiMessages .msg-system { color: #9ca3af; font-style: italic; }
+    </style>
+</head>
+
+<body class="dashboard-body">
+
+<nav class="navbar navbar-expand-lg navbar-dark navbar-futuristic">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand" href="#">RFID<span class="brand-dot">•</span>Inventory</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarMain">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarMain">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link active" href="{% url 'dashboard' %}">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'stock_history' %}">History</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'stock_history_filter' %}">Filter</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'forecast_form' %}">Forecast</a></li>
+                <li><a class="nav-link" href="{% url 'my_data_dashboard' %}">My Data</a></li>
+
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<main class="dashboard-main container-fluid">
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="page-title">CONTROL ROOM</div>
+            <div class="page-subtitle">Live stock levels + Online Retail data 2022–2024 trend data.</div>
+        </div>
+        <div class="col-lg-4 text-lg-end mt-3">
+            <span class="kpi-pill"><span class="dot dot-green"></span> Live back-end: Connected</span>
+        </div>
+    </div>
+
+
+        <!-- ULTRASONIC KPI -->
+       
+    </div>
+
+    <div class="glow-divider mb-4"></div>
+
+    <!-- RFID STOCK TABLE + CHART -->
+
+
+    <!-- KAGGLE ANALYSIS -->
+    <div class="row g-4 mt-3">
+        <div class="col-lg-6">
+            <div class="card card-glass-soft">
+                <div class="card-body">
+                    <h5 class="card-title">Rolling Units Sold (Kaggle)</h5>
+                    <small class="text-muted-soft">Click a category on the right to filter.</small>
+                    <div class="chart-wrapper mt-2"><canvas id="dailyChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card card-glass-soft">
+                <div class="card-body">
+                    <h5 class="card-title">Top Categories – 2022 to 2024</h5>
+                    <small class="text-muted-soft">Click a bar to show that category’s trend.</small>
+                    <div class="chart-wrapper"><canvas id="categoryChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORECAST + RFID TREND -->
+    <div class="row g-4 mt-3">
+
+        <div class="col-lg-6">
+            <div class="card card-glass-soft">
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between">
+                        <h5 class="card-title">Forecast vs Actual Demand (Kaggle)</h5>
+                        <div id="forecastYearButtons" class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-light active" data-year="all">All</button>
+                            <button class="btn btn-outline-light" data-year="2022">2022</button>
+                            <button class="btn btn-outline-light" data-year="2023">2023</button>
+                            <button class="btn btn-outline-light" data-year="2024">2024</button>
+                        </div>
+                    </div>
+
+                    <p class="text-muted-soft small mb-1">Model performance over time.</p>
+                    <p id="forecastInsights" class="text-muted-soft small mb-2"></p>
+
+                    <div class="chart-wrapper mb-3"><canvas id="forecastActualChart"></canvas></div>
+                    <div class="chart-wrapper" style="height:200px"><canvas id="forecastErrorChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        
+
+    </div>
+
+    <!-- AI ASSISTANT + ULTRASONIC TREND -->
+    <div class="row g-4 mt-3">
+        <div class="col-lg-6">
+            <div class="card card-glass-soft h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title mb-2">AI Inventory Assistant</h5>
+                    <p class="text-muted-soft small mb-2">
+                        Ask questions like: “Which items are at risk of stock-out?”, “Give me a quick overview for today”,
+                        or “How is demand trending?”.
+                    </p>
+
+                    <div id="aiMessages" class="flex-grow-1 mb-2 p-2">
+                        <div class="msg-system mb-1">
+                            Assistant is ready. Ask something about stock, demand, or trends.
+                        </div>
+                    </div>
+
+                    <form id="aiForm" class="mt-1">
+                        <div class="input-group input-group-sm">
+                            <input id="aiQuestion" type="text"
+                                   class="form-control"
+                                   placeholder="Ask about stock, demand, or trends..."
+                                   autocomplete="off">
+                            <button class="btn btn-primary" type="submit">Ask</button>
+                        </div>
+                    </form>
+                    <small id="aiStatus" class="text-muted-soft mt-1"></small>
+                </div>
+            </div>
+        </div>
+
+        <!-- ULTRASONIC TREND CARD -->
+        
+    </div>
+
+</main>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- DASHBOARD JS -->
+<script>
+    Chart.defaults.color = "#e5e5e5";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.borderColor = "rgba(255,255,255,0.1)";
+
+    function darkOptions(extra) {
+        return Object.assign({
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { ticks: { color: "#fff" }, grid: { color: "rgba(255,255,255,0.08)" }},
+                y: { ticks: { color: "#fff" }, grid: { color: "rgba(255,255,255,0.1)" }}
+            }
+        }, extra || {});
+    }
+
+    /* ---------------- RFID STOCK CHART ---------------- */
+    new Chart(document.getElementById("stockChart"), {
+        type: "bar",
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: "Current Stock",
+                data: {{ chart_values|safe }},
+                backgroundColor: "#3db2ff"
+            }]
+        },
+        options: darkOptions()
+    });
+
+    /* ---------------- ROLLING SALES CHART ---------------- */
+    const dailyChart = new Chart(document.getElementById("dailyChart"), {
+        type: "line",
+        data: {
+            labels: {{ daily_labels|safe }},
+            datasets: [{
+                label: "Units Sold (All Categories)",
+                data: {{ daily_values|safe }},
+                borderColor: "#00eaff",
+                backgroundColor: "rgba(0,234,255,0.15)",
+                fill: true,
+                tension: 0.3,
+                pointRadius: 2
+            }]
+        },
+        options: darkOptions()
+    });
+
+    /* ---------------- CATEGORY CHART ---------------- */
+    const categoryChart = new Chart(document.getElementById("categoryChart"), {
+        type: "bar",
+        data: {
+            labels: {{ category_labels|safe }},
+            datasets: [{
+                label: "Units Sold",
+                data: {{ category_values|safe }},
+                backgroundColor: "#ffa726"
+            }]
+        },
+        options: darkOptions()
+    });
+
+    /* ---------------- CATEGORY CLICK -> UPDATE ROLLING CHART ---------------- */
+    document.getElementById("categoryChart").onclick = function(evt) {
+        const points = categoryChart.getElementsAtEventForMode(evt, "nearest", { intersect: true }, true);
+        if (!points.length) return;
+
+        const index = points[0].index;
+        const category = categoryChart.data.labels[index];
+
+        fetch("/api/category-timeseries/?category=" + encodeURIComponent(category))
+            .then(res => res.json())
+            .then(data => {
+                if (!data.labels || !data.labels.length) return;
+                dailyChart.data.labels = data.labels;
+                dailyChart.data.datasets[0].data = data.values;
+                dailyChart.data.datasets[0].label = "Units Sold – " + category;
+                dailyChart.update();
+            })
+            .catch(err => console.error("Category timeseries error:", err));
+    };
+
+    /* ---------------- FORECAST vs ACTUAL + ERROR (%) ---------------- */
+    let forecastChart = null;
+    let errorChart = null;
+    let forecastRaw = null;
+
+    function renderForecast(source, year) {
+        if (!source) return;
+
+        let labels = source.labels;
+        let actual = source.actual;
+        let forecast = source.forecast;
+        let errorPct = source.error_pct;
+
+        if (year !== "all") {
+            const idxs = labels
+                .map((d, i) => ({ d, i }))
+                .filter(e => e.d.startsWith(year));
+
+            labels = idxs.map(e => e.d);
+            actual = idxs.map(e => actual[e.i]);
+            forecast = idxs.map(e => forecast[e.i]);
+            errorPct = idxs.map(e => errorPct[e.i]);
+        }
+
+        if (forecastChart) {
+            forecastChart.data.labels = labels;
+            forecastChart.data.datasets[0].data = actual;
+            forecastChart.data.datasets[1].data = forecast;
+            forecastChart.update();
+        } else {
+            forecastChart = new Chart(document.getElementById("forecastActualChart"), {
+                type: "line",
+                data: {
+                    labels,
+                    datasets: [
+                        { label: "Actual Units Sold", data: actual, borderColor: "#4ade80", backgroundColor: "rgba(74,222,128,0.15)", fill: true, tension: 0.3, pointRadius: 2 },
+                        { label: "Forecasted Demand", data: forecast, borderColor: "#f97316", backgroundColor: "rgba(249,115,22,0.15)", fill: true, tension: 0.3, pointRadius: 2 }
+                    ]
+                },
+                options: darkOptions()
+            });
+        }
+
+        if (errorChart) {
+            errorChart.data.labels = labels;
+            errorChart.data.datasets[0].data = errorPct;
+            errorChart.update();
+        } else {
+            errorChart = new Chart(document.getElementById("forecastErrorChart"), {
+                type: "bar",
+                data: {
+                    labels,
+                    datasets: [{
+                        label: "Forecast error (%)",
+                        data: errorPct,
+                        backgroundColor: "#f97316"
+                    }]
+                },
+                options: darkOptions()
+            });
+        }
+    }
+
+    fetch("/api/forecast-vs-actual/")
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) { console.error(data.error); return; }
+            forecastRaw = data;
+
+            if (data.insights) {
+                const i = data.insights;
+                document.getElementById("forecastInsights").textContent =
+                    `Model MAPE ≈ ${i.overall_mape}%. Best month: ${i.best_month} (${i.best_month_error}%). ` +
+                    `Weakest month: ${i.worst_month} (${i.worst_month_error}%).`;
+            }
+
+            renderForecast(forecastRaw, "all");
+        })
+        .catch(err => console.error("Forecast vs actual error:", err));
+
+    document.querySelectorAll("#forecastYearButtons .btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll("#forecastYearButtons .btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            const yr = btn.dataset.year || "all";
+            renderForecast(forecastRaw, yr);
+        });
+    });
+
+    /* ---------------- RFID IN vs OUT TREND ---------------- */
+    fetch("/api/rfid-in-out/")
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) { console.error(data.error); return; }
+            new Chart(document.getElementById("rfidTrendChart"), {
+                type: "line",
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        { label: "IN", data: data.in_values, borderColor: "#22c55e", backgroundColor: "rgba(34,197,94,0.15)", fill: true, tension: 0.3, pointRadius: 2 },
+                        { label: "OUT", data: data.out_values, borderColor: "#ef4444", backgroundColor: "rgba(239,68,68,0.15)", fill: true, tension: 0.3, pointRadius: 2 }
+                    ]
+                },
+                options: darkOptions()
+            });
+        })
+        .catch(err => console.error("RFID trend error:", err));
+
+    /* ---------------- ULTRASONIC KPI + TREND ---------------- */
+    let ultraChart = null;
+
+    function initUltraChart(labels, values) {
+        const ctx = document.getElementById("ultraChart");
+        if (!ctx) return;
+        ultraChart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Distance (cm)",
+                    data: values,
+                    borderColor: "#4ade80",
+                    backgroundColor: "rgba(74,222,128,0.15)",
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2
+                }]
+            },
+            options: darkOptions({
+                scales: {
+                    x: { ticks: { color: "#e5e7eb" }, grid: { color: "rgba(148,163,184,0.25)" }},
+                    y: { ticks: { color: "#e5e7eb" }, grid: { color: "rgba(148,163,184,0.2)" }}
+                }
+            })
+        });
+    }
+
+    function updateUltraUI(data) {
+        const distEl = document.getElementById("ultra-distance");
+        const updEl  = document.getElementById("ultra-updated");
+        if (!distEl || !updEl) return;
+
+        if (!data.has_data) {
+            distEl.textContent = "--";
+            updEl.textContent = data.message || "No ultrasonic data yet.";
+            return;
+        }
+
+        distEl.textContent = data.latest_cm.toFixed(1) + " cm";
+        updEl.textContent = "Updated " + new Date(data.latest_at).toLocaleTimeString();
+
+        if (!ultraChart) {
+            initUltraChart(data.labels, data.values);
+        } else {
+            ultraChart.data.labels = data.labels;
+            ultraChart.data.datasets[0].data = data.values;
+            ultraChart.update();
+        }
+    }
+
+    function pollUltrasonic() {
+        fetch("/api/ultrasonic-latest/")
+            .then(res => res.json())
+            .then(data => {
+                updateUltraUI(data);
+            })
+            .catch(err => console.error("Ultrasonic latest error:", err));
+    }
+
+    // initial load + refresh every 10s
+    pollUltrasonic();
+    setInterval(pollUltrasonic, 10000);
+
+    /* ---------------- AI ASSISTANT PANEL ---------------- */
+    (function () {
+        const form = document.getElementById("aiForm");
+        if (!form) return;
+
+        const input = document.getElementById("aiQuestion");
+        const messages = document.getElementById("aiMessages");
+        const statusEl = document.getElementById("aiStatus");
+
+        function appendMessage(text, cls) {
+            const div = document.createElement("div");
+            div.className = cls + " mb-1";
+            div.textContent = text;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            const q = (input.value || "").trim();
+            if (!q) return;
+
+            appendMessage("You: " + q, "msg-user");
+            input.value = "";
+            statusEl.textContent = "Thinking...";
+
+            fetch("/api/ai-assistant/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question: q })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const ans = data.answer || "I couldn't generate an answer.";
+                    appendMessage("Assistant: " + ans, "msg-assistant");
+                    statusEl.textContent = "";
+                })
+                .catch(err => {
+                    console.error("AI assistant error:", err);
+                    statusEl.textContent = "Error getting AI response.";
+                });
+        });
+    })();
+</script>
+
+</body>
+</html>

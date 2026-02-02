@@ -1,0 +1,172 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RFID Inventory – Filtered History</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'inventory/dashboard.css' %}">
+</head>
+<body class="bg-dark text-light">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="{% url 'dashboard' %}">
+            RFID • INVENTORY
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarMain" aria-controls="navbarMain"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarMain">
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'stock_history' %}">History</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'stock_history_filter' %}">Filter</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'forecast_form' %}">Forecast</a>
+
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<main class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="display-6 mb-1 text-gradient">Filtered Stock History</h1>
+            <p class="text-muted mb-0">
+                Drill down by item, direction and date range to analyse movement patterns.
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Filter card -->
+        <div class="col-lg-3">
+            <div class="card card-surface h-100 shadow-lg">
+                <div class="card-header fw-semibold">
+                    Filters
+                </div>
+                <div class="card-body">
+                    <form method="get">
+                        <div class="mb-3">
+                            <label class="form-label">Item</label>
+                            <select name="item" class="form-select form-select-sm">
+                                <option value="">All items</option>
+                                {% for it in items %}
+                                    <option value="{{ it.id }}"
+                                        {% if request.GET.item == it.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ it.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Direction</label>
+                            <select name="direction" class="form-select form-select-sm">
+                                <option value="">Both</option>
+                                <option value="IN"
+                                        {% if request.GET.direction == "IN" %}selected{% endif %}>
+                                    IN
+                                </option>
+                                <option value="OUT"
+                                        {% if request.GET.direction == "OUT" %}selected{% endif %}>
+                                    OUT
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Start date</label>
+                            <input type="date" name="start" class="form-control form-control-sm"
+                                   value="{{ request.GET.start }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">End date</label>
+                            <input type="date" name="end" class="form-control form-control-sm"
+                                   value="{{ request.GET.end }}">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            Apply filters
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results table -->
+        <div class="col-lg-9">
+            <div class="card card-surface shadow-lg h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold">Results</span>
+                    <span class="badge bg-info-subtle text-info-emphasis">
+                        {{ movements|length }} records
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0 align-middle">
+                            <thead class="table-gradient">
+                            <tr>
+                                <th scope="col">Time</th>
+                                <th scope="col">Item</th>
+                                <th scope="col">Direction</th>
+                                <th scope="col">Location</th>
+                                <th scope="col" class="text-end">Quantity</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for mv in movements %}
+                                <tr>
+                                    <td>{{ mv.scanned_at|date:"Y-m-d H:i" }}</td>
+                                    <td>{{ mv.item.name }}</td>
+                                    <td>
+                                        {% if mv.direction == "IN" %}
+                                            <span class="badge bg-success-subtle text-success-emphasis">
+                                                IN
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger-emphasis">
+                                                OUT
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ mv.location }}</td>
+                                    <td class="text-end">{{ mv.quantity }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        No movements match the selected filters.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer small text-muted">
+                    Tip: use this view together with your ML forecast to see if stock-outs
+                    are caused by unexpected demand.
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

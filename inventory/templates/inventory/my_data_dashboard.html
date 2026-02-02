@@ -1,0 +1,703 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Analytics</title>
+
+    <!-- Re-use your existing dashboard CSS -->
+    <link rel="stylesheet" href="{% static 'inventory/css/inventory_dashboard.css' %}">
+
+    <!-- Tailwind (optional) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-900 text-white">
+
+    <!-- TOP NAV -->
+    <header class="w-full bg-gradient-to-r from-[#020617] to-[#02081f] border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-cyan-300 font-semibold tracking-[0.25em] text-xs">
+                    RFID•INVENTORY
+                </span>
+            </div>
+
+            <nav class="flex items-center gap-6 text-sm">
+                <a href="{% url 'dashboard' %}" class="text-slate-300 hover:text-cyan-300">
+                    Main Dashboard
+                </a>
+                <a href="{% url 'stock_history' %}" class="text-slate-300 hover:text-cyan-300">
+                    History
+                </a>
+                <a href="{% url 'stock_history_filter' %}" class="text-slate-300 hover:text-cyan-300">
+                    Filter
+                </a>
+                <a href="{% url 'forecast_form' %}" class="text-slate-300 hover:text-cyan-300">
+                    Forecast
+                </a>
+                <!-- Active link -->
+                <a href="{% url 'my_data_dashboard' %}" class="text-cyan-300 font-semibold">
+                    My Data
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        <div class="flex items-center justify-between mb-2">
+            <h1 class="text-3xl font-bold tracking-wide">
+                INVENTORY MANAGEMENT
+            </h1>
+            <p class="text-sm text-slate-300 max-w-xl text-right">
+                All charts below are built only from
+                <span class="font-semibold text-cyan-300">StockMovement</span>
+                table using RFID scans.
+            </p>
+        </div>
+
+        <!-- ROW 1: Daily units + per-item units -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Daily units -->
+            <section class="bg-[#020617] border border-slate-800 rounded-2xl p-5 shadow-lg">
+                <h2 class="text-lg font-semibold mb-1 text-slate-100">
+                    Daily Units Sold (My Data)
+                </h2>
+                <p class="text-xs text-slate-400 mb-4">
+                    Aggregated from <span class="font-semibold">OUT</span> movements in
+                    <span class="font-semibold">StockMovement</span> captured via RFID.
+                </p>
+                <div class="h-64">
+                    <canvas id="dailyUnitsChart"></canvas>
+                </div>
+                <!-- Insight for non-technical users -->
+                <div class="mt-3 text-xs text-slate-400 leading-relaxed">
+                    <span class="text-cyan-300 font-semibold">What this shows:</span>
+                    This line shows how many items were sold each day using RFID scans.<br>
+                    <span class="text-cyan-300 font-semibold">Why it matters:</span>
+                    It helps managers quickly see busy days, slow days, and overall sales trends.<br>
+                    <span class="text-cyan-300 font-semibold">Example:</span>
+                    If the line spikes on weekends, it means more customers buy on weekends.
+                </div>
+            </section>
+
+            <!-- Units by item -->
+            <section class="bg-[#020617] border border-slate-800 rounded-2xl p-5 shadow-lg">
+                <h2 class="text-lg font-semibold mb-1 text-slate-100">
+                    Units Sold by Item (My Data)
+                </h2>
+                <p class="text-xs text-slate-400 mb-4">
+                    Total units sold per item, based on <span class="font-semibold">OUT</span> movements from RFID scans.
+                </p>
+                <div class="h-64">
+                    <canvas id="itemUnitsChart"></canvas>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-2">
+                    💡 Tip: click a bar to filter the Daily chart and Forecast chart by that item.
+                    Click on empty space in the bar chart to reset.
+                </p>
+                <!-- Insight for non-technical users -->
+                <div class="mt-3 text-xs text-slate-400 leading-relaxed">
+                    <span class="text-cyan-300 font-semibold">What this shows:</span>
+                    A comparison of total units sold per item.<br>
+                    <span class="text-cyan-300 font-semibold">Why it matters:</span>
+                    Helps identify fast-moving products and slow-selling stock.<br>
+                    <span class="text-cyan-300 font-semibold">How to use it:</span>
+                    Click any bar to see that item’s daily sales and demand forecast below.
+                </div>
+            </section>
+        </div>
+
+        <!-- ROW 2: Live Stock Level -->
+        <section class="bg-[#020617] border border-slate-800 rounded-2xl p-5 shadow-lg">
+            <div class="flex items-center justify-between mb-1">
+                <h2 class="text-lg font-semibold text-slate-100">
+                    Live Stock Level (RFID Calculated)
+                </h2>
+                <p class="text-xs text-slate-400">
+                    <span class="font-semibold">Received (IN) − Sold (OUT) = In Stock.</span>
+                    Reorder Qty uses a 7-day demand + 25% safety buffer.
+                </p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-slate-300">
+                    <thead>
+                        <tr class="border-b border-slate-700 text-cyan-300">
+                            <th class="text-left py-2 pr-4">Item</th>
+                            <th class="text-right py-2 px-2">Received (IN)</th>
+                            <th class="text-right py-2 px-2">Sold (OUT)</th>
+                            <th class="text-right py-2 px-2">In Stock</th>
+                            <th class="text-right py-2 px-2">Reorder Qty</th>
+                            <th class="text-right py-2 pl-2">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stockLevelBody">
+                        <!-- Rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Insight for non-technical users -->
+            <div class="mt-3 text-xs text-slate-400 leading-relaxed">
+                <span class="text-cyan-300 font-semibold">How to read this table:</span><br>
+                • <span class="text-green-400">Green “In stock”</span> = safe quantity available.<br>
+                • <span class="text-yellow-400">Low stock</span> = item will soon run out.<br>
+                • <span class="text-red-400">Oversold</span> = more items were sold than recorded as received (data mismatch or missing IN scans).<br><br>
+                <span class="text-cyan-300 font-semibold">Reorder Quantity:</span>
+                Automatically calculated using the last 7 days of sales plus a safety buffer to avoid stock-outs.
+            </div>
+        </section>
+
+        <!-- ROW 3: Forecast vs Actual Demand (My Data – Last 30 Days) -->
+        <section class="bg-[#020617] border border-slate-800 rounded-2xl p-5 shadow-lg">
+            <h2 class="text-lg font-semibold mb-1 text-slate-100">
+                Forecast vs Actual Demand (Last 30 Days)
+            </h2>
+            <p class="text-xs text-slate-400 mb-4">
+                Actual demand is based on <span class="font-semibold">OUT</span> movements in
+                <span class="font-semibold">StockMovement</span>.
+                Forecast is a rolling 5-day average calculated from your own RFID sales history.
+                When you click an item bar above, this chart focuses on that specific item.
+            </p>
+            <div class="h-64">
+                <canvas id="forecastActualChart"></canvas>
+            </div>
+            <!-- Insight for non-technical users -->
+            <div class="mt-3 text-xs text-slate-400 leading-relaxed">
+                <span class="text-cyan-300 font-semibold">Actual (green line):</span>
+                Real items sold based on RFID scans.<br>
+                <span class="text-cyan-300 font-semibold">Forecast (blue line):</span>
+                A prediction based on recent sales trends.<br>
+                <span class="text-cyan-300 font-semibold">Why it matters:</span>
+                If actual sales rise above forecast, you may run out of stock.
+                If forecast stays higher than actual, you may be over-ordering and tying up cash in stock.
+            </div>
+        </section>
+
+        <!-- ROW 4: ML Forecast vs Actual (extra chart, uses trained model) -->
+        <section class="bg-[#020617] border border-slate-800 rounded-2xl p-5 shadow-lg">
+            <h2 class="text-lg font-semibold mb-1 text-slate-100">
+                Machine Learning Forecast vs Actual Demand (Last 30 Days)
+            </h2>
+            <p class="text-xs text-slate-400 mb-4">
+                This chart uses a trained machine learning model (based on
+                <span class="font-semibold">StockMovement</span> history) to predict daily demand
+                and compares it to what actually happened.
+            </p>
+            <div class="h-64">
+                <canvas id="mlForecastChart"></canvas>
+            </div>
+            <div class="mt-3 text-xs text-slate-400 leading-relaxed">
+                <span class="text-cyan-300 font-semibold">Actual (green line):</span>
+                Real units sold from RFID scans for each day.<br>
+                <span class="text-cyan-300 font-semibold">ML Forecast (purple line):</span>
+                What the machine learning model expected you to sell on those days.<br>
+                <span class="text-cyan-300 font-semibold">Why it matters:</span>
+                The closer the two lines are, the better the model is at predicting demand.
+                Large gaps highlight days where the model under- or over-estimated sales.
+            </div>
+        </section>
+    </main>
+
+    <!-- JS to build the charts from context data -->
+    <script>
+        // These variables come from your my_data_dashboard view
+        const dailyUnitsData    = {{ daily_units_data|default:"[]"|safe }};
+        const itemUnitsData     = {{ item_units_data|default:"[]"|safe }};
+        const stockLevelData    = {{ stock_level_data|default:"[]"|safe }};
+        const itemDailyData     = {{ item_daily_data|default:"[]"|safe }};
+        const forecastDataRaw   = {{ forecast_actual_data|default:"[]"|safe }};
+        const mlForecastDataRaw = {{ ml_forecast_data|default:"[]"|safe }};
+        const mlForecastByItem  = {{ ml_forecast_by_item|default:"{}"|safe }};
+
+        console.log("ML forecast raw data:", mlForecastDataRaw);  // debugging
+
+        let dailyChart      = null;
+        let itemChart       = null;
+        let forecastChart   = null;
+        let mlForecastChart = null;
+
+        // Helper: 5-day moving average
+        function movingAverage(values, windowSize) {
+            const result = [];
+            for (let i = 0; i < values.length; i++) {
+                const start = Math.max(0, i - windowSize + 1);
+                const slice = values.slice(start, i + 1);
+                const avg = slice.reduce((a, b) => a + b, 0) / slice.length;
+                result.push(Math.round(avg));
+            }
+            return result;
+        }
+
+        // Keep a copy of the "all items" daily series so we can reset
+        const allDailyLabels = dailyUnitsData.map(row => row.date);
+        const allDailyValues = dailyUnitsData.map(row => row.total_out);
+
+        // Also keep a copy of the "overall" forecast vs actual series
+        const baseForecastLabels   = forecastDataRaw.map(r => r.date);
+        const baseForecastActual   = forecastDataRaw.map(r => r.actual);
+        const baseForecastForecast = forecastDataRaw.map(r => r.forecast);
+
+        // And base ML forecast arrays (for reset)
+        const baseMlLabels = mlForecastDataRaw.map(r => r.date);
+        const baseMlActual = mlForecastDataRaw.map(r => Number(r.actual || 0));
+        const baseMlPred   = mlForecastDataRaw.map(r => {
+            if (typeof r.predicted !== "undefined") return Number(r.predicted);
+            if (typeof r.ml_forecast !== "undefined") return Number(r.ml_forecast);
+            if (typeof r.forecast !== "undefined") return Number(r.forecast);
+            return 0;
+        });
+
+        // -------- Daily Units Sold (line chart) --------
+        (function () {
+            const ctx = document.getElementById('dailyUnitsChart');
+            if (!ctx || !dailyUnitsData.length) return;
+
+            dailyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: allDailyLabels,
+                    datasets: [{
+                        label: 'Units Sold (OUT)',
+                        data: allDailyValues,
+                        tension: 0.25,
+                        fill: false,
+                        borderColor: 'rgba(34, 211, 238, 1)',
+                        backgroundColor: 'rgba(45, 212, 191, 0.3)',
+                        borderWidth: 2,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'nearest',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#e5e7eb' } },
+                        tooltip: {
+                            enabled: true,
+                            callbacks: {
+                                label: function (ctx) {
+                                    return ` ${ctx.parsed.y} units sold`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af', maxRotation: 45, minRotation: 45 },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(55,65,81,0.3)' }
+                        }
+                    }
+                }
+            });
+        })();
+
+        // Helper: update daily chart to show one item's dates + units
+        function showDailyForItem(itemName) {
+            if (!dailyChart) return;
+
+            const rows = itemDailyData
+                .filter(r => (r.item_name || r.item || '').toLowerCase() === itemName.toLowerCase())
+                .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+            if (!rows.length) {
+                return; // keep current view if no data
+            }
+
+            const labels = rows.map(r => r.date);
+            const values = rows.map(r => r.total_out);
+
+            dailyChart.data.labels = labels;
+            dailyChart.data.datasets[0].data = values;
+            dailyChart.data.datasets[0].label = `Units Sold (OUT) – ${itemName}`;
+            dailyChart.update();
+        }
+
+        // Helper: reset daily chart back to "all items"
+        function resetDailyChart() {
+            if (!dailyChart) return;
+            dailyChart.data.labels = allDailyLabels;
+            dailyChart.data.datasets[0].data = allDailyValues;
+            dailyChart.data.datasets[0].label = 'Units Sold (OUT)';
+            dailyChart.update();
+        }
+
+        // -------- Forecast vs Actual (line chart, 5-day average) --------
+        (function () {
+            const ctx = document.getElementById('forecastActualChart');
+            if (!ctx) return;
+
+            let labels = [];
+            let actualVals = [];
+            let forecastVals = [];
+
+            if (forecastDataRaw && forecastDataRaw.length) {
+                // Use data prepared by the Django view
+                labels       = forecastDataRaw.map(r => r.date);
+                actualVals   = forecastDataRaw.map(r => r.actual);
+                forecastVals = forecastDataRaw.map(r => r.forecast);
+            } else if (dailyUnitsData && dailyUnitsData.length) {
+                // Fallback: build from last 30 days of dailyUnitsData
+                const lastRows = dailyUnitsData.slice(-30);
+                labels       = lastRows.map(r => r.date);
+                actualVals   = lastRows.map(r => r.total_out);
+                forecastVals = movingAverage(actualVals, 5);
+            } else {
+                // No data at all
+                return;
+            }
+
+            forecastChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Actual Units Sold (OUT)',
+                            data: actualVals,
+                            tension: 0.25,
+                            borderColor: 'rgba(34,197,94,1)', // green
+                            backgroundColor: 'rgba(34,197,94,0.2)',
+                            borderWidth: 2,
+                            pointRadius: 1,
+                            fill: false
+                        },
+                        {
+                            label: 'Forecast (5-day moving avg)',
+                            data: forecastVals,
+                            tension: 0.25,
+                            borderColor: 'rgba(129,140,248,1)', // indigo
+                            backgroundColor: 'rgba(129,140,248,0.2)',
+                            borderWidth: 2,
+                            pointRadius: 1,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'nearest',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#e5e7eb' } },
+                        tooltip: {
+                            enabled: true,
+                            callbacks: {
+                                label: function (ctx) {
+                                    return ` ${ctx.parsed.y} units`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af', maxRotation: 45, minRotation: 45 },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(55,65,81,0.3)' }
+                        }
+                    }
+                }
+            });
+        })();
+
+        // Helper: show forecast (5-day avg) for a specific item (last 30 days)
+        function showForecastForItem(itemName) {
+            if (!forecastChart) return;
+
+            const rows = itemDailyData
+                .filter(r => (r.item_name || r.item || '').toLowerCase() === itemName.toLowerCase())
+                .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+            if (!rows.length) {
+                return; // keep current view if no data
+            }
+
+            const lastRows = rows.slice(-30);
+            const labels = lastRows.map(r => r.date);
+            const actualVals = lastRows.map(r => r.total_out);
+            const forecastVals = movingAverage(actualVals, 5);
+
+            forecastChart.data.labels = labels;
+            forecastChart.data.datasets[0].data = actualVals;
+            forecastChart.data.datasets[0].label = `Actual Units Sold (OUT) – ${itemName}`;
+            forecastChart.data.datasets[1].data = forecastVals;
+            forecastChart.data.datasets[1].label = `Forecast (5-day moving avg) – ${itemName}`;
+            forecastChart.update();
+        }
+
+        // Helper: reset forecast chart back to overall data
+        function resetForecastChart() {
+            if (!forecastChart) return;
+
+            if (forecastDataRaw && forecastDataRaw.length) {
+                forecastChart.data.labels = baseForecastLabels;
+                forecastChart.data.datasets[0].data = baseForecastActual;
+                forecastChart.data.datasets[0].label = 'Actual Units Sold (OUT)';
+                forecastChart.data.datasets[1].data = baseForecastForecast;
+                forecastChart.data.datasets[1].label = 'Forecast (5-day moving avg)';
+            } else {
+                // fallback reset: use all daily data
+                const lastRows = dailyUnitsData.slice(-30);
+                const labels = lastRows.map(r => r.date);
+                const actualVals = lastRows.map(r => r.total_out);
+                const forecastVals = movingAverage(actualVals, 5);
+
+                forecastChart.data.labels = labels;
+                forecastChart.data.datasets[0].data = actualVals;
+                forecastChart.data.datasets[0].label = 'Actual Units Sold (OUT)';
+                forecastChart.data.datasets[1].data = forecastVals;
+                forecastChart.data.datasets[1].label = 'Forecast (5-day moving avg)';
+            }
+            forecastChart.update();
+        }
+
+        // -------- ML Forecast vs Actual (using trained model) --------
+        (function () {
+            const ctx = document.getElementById('mlForecastChart');
+            if (!ctx || !mlForecastDataRaw.length) return;
+
+            console.log("ML labels:", baseMlLabels);
+            console.log("ML actual:", baseMlActual);
+            console.log("ML predicted:", baseMlPred);
+
+            mlForecastChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: baseMlLabels,
+                    datasets: [
+                        {
+                            label: 'Actual Units Sold (OUT)',
+                            data: baseMlActual,
+                            tension: 0.25,
+                            borderColor: 'rgba(34,197,94,1)', // green
+                            backgroundColor: 'rgba(34,197,94,0.15)',
+                            borderWidth: 2,
+                            pointRadius: 1,
+                            fill: false
+                        },
+                        {
+                            label: 'ML Forecast',
+                            data: baseMlPred,
+                            tension: 0.25,
+                            borderColor: 'rgba(168,85,247,1)', // purple
+                            backgroundColor: 'rgba(168,85,247,0.15)',
+                            borderWidth: 2,
+                            pointRadius: 1,
+                            borderDash: [5, 5],
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'nearest',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#e5e7eb' } },
+                        tooltip: {
+                            enabled: true,
+                            callbacks: {
+                                label: function (ctx) {
+                                    return ` ${ctx.parsed.y} units`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af', maxRotation: 45, minRotation: 45 },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(55,65,81,0.3)' }
+                        }
+                    }
+                }
+            });
+        })();
+
+        // --- ML chart helpers for item interaction ---
+
+        function showMlForecastForItem(itemName) {
+            if (!mlForecastChart) return;
+            const rows = mlForecastByItem[itemName];
+            if (!rows || !rows.length) return;
+
+            const labels = rows.map(r => r.date);
+            const actualVals = rows.map(r => Number(r.actual || 0));
+            const predVals   = rows.map(r => {
+                if (typeof r.predicted !== "undefined") return Number(r.predicted);
+                if (typeof r.ml_forecast !== "undefined") return Number(r.ml_forecast);
+                if (typeof r.forecast !== "undefined") return Number(r.forecast);
+                return 0;
+            });
+
+            mlForecastChart.data.labels = labels;
+            mlForecastChart.data.datasets[0].data = actualVals;
+            mlForecastChart.data.datasets[0].label = `Actual Units Sold (OUT) – ${itemName}`;
+            mlForecastChart.data.datasets[1].data = predVals;
+            mlForecastChart.data.datasets[1].label = `ML Forecast – ${itemName}`;
+            mlForecastChart.update();
+        }
+
+        function resetMlForecastChart() {
+            if (!mlForecastChart) return;
+
+            mlForecastChart.data.labels = baseMlLabels;
+            mlForecastChart.data.datasets[0].data = baseMlActual;
+            mlForecastChart.data.datasets[0].label = 'Actual Units Sold (OUT)';
+            mlForecastChart.data.datasets[1].data = baseMlPred;
+            mlForecastChart.data.datasets[1].label = 'ML Forecast';
+            mlForecastChart.update();
+        }
+
+        // -------- Units Sold by Item (bar chart) --------
+        (function () {
+            const labels = itemUnitsData.map(row => row.item_name);
+            const values = itemUnitsData.map(row => row.total_out);
+
+            const ctx = document.getElementById('itemUnitsChart');
+            if (!ctx || !itemUnitsData.length) return;
+
+            const baseColors = labels.map(() => 'rgba(249, 115, 22, 0.8)');
+
+            itemChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Units Sold (OUT)',
+                        data: values,
+                        backgroundColor: baseColors.slice()
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#e5e7eb' } },
+                        tooltip: {
+                            enabled: true,
+                            callbacks: {
+                                label: function (ctx) {
+                                    return ` ${ctx.parsed.y} units sold`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(55,65,81,0.3)' }
+                        }
+                    },
+                    // ✨ INTERACTION: click bar → filter daily, forecast, and ML charts.
+                    // Click on empty space (no bar) → reset charts.
+                    onClick: (evt, elements) => {
+                        if (!elements.length) {
+                            // No bar clicked → reset view
+                            itemChart.data.datasets[0].backgroundColor = baseColors.slice();
+                            itemChart.update();
+                            resetDailyChart();
+                            resetForecastChart();
+                            resetMlForecastChart();
+                            return;
+                        }
+
+                        const index = elements[0].index;
+                        const itemName = labels[index];
+
+                        // Visually highlight the selected bar
+                        itemChart.data.datasets[0].backgroundColor = labels.map((_, i) =>
+                            i === index ? 'rgba(249, 115, 22, 1)' : 'rgba(55, 65, 81, 0.7)'
+                        );
+                        itemChart.update();
+
+                        // Update the daily, forecast, and ML charts for this item
+                        showDailyForItem(itemName);
+                        showForecastForItem(itemName);
+                        showMlForecastForItem(itemName);
+                    }
+                }
+            });
+        })();
+
+        // -------- Live Stock Level table --------
+        (function () {
+            const tbody = document.getElementById('stockLevelBody');
+            if (!tbody) return;
+
+            stockLevelData.forEach(row => {
+                const tr = document.createElement('tr');
+
+                const itemCell = document.createElement('td');
+                itemCell.className = 'py-1 pr-4';
+                itemCell.textContent = row.item;
+
+                const inCell = document.createElement('td');
+                inCell.className = 'py-1 px-2 text-right';
+                inCell.textContent = row.total_in;
+
+                const outCell = document.createElement('td');
+                outCell.className = 'py-1 px-2 text-right';
+                outCell.textContent = row.total_out;
+
+                const stockCell = document.createElement('td');
+                stockCell.className = 'py-1 px-2 text-right font-semibold ' +
+                    (row.in_stock <= 0 ? 'text-red-400' :
+                     row.in_stock <= 50 ? 'text-yellow-400' : 'text-green-400');
+                stockCell.textContent = row.in_stock;
+
+                const reorderCell = document.createElement('td');
+                reorderCell.className = 'py-1 px-2 text-right';
+                reorderCell.textContent = row.reorder_qty || 0;
+
+                const statusCell = document.createElement('td');
+                statusCell.className = 'py-1 pl-2 text-right';
+                if (row.status.startsWith('Oversold')) {
+                    statusCell.classList.add('text-red-400');
+                } else if (row.status === 'Low stock' || row.status === 'Out of stock') {
+                    statusCell.classList.add('text-yellow-400');
+                } else {
+                    statusCell.classList.add('text-green-400');
+                }
+                statusCell.textContent = row.status;
+
+                tr.appendChild(itemCell);
+                tr.appendChild(inCell);
+                tr.appendChild(outCell);
+                tr.appendChild(stockCell);
+                tr.appendChild(reorderCell);
+                tr.appendChild(statusCell);
+                tbody.appendChild(tr);
+            });
+        })();
+    </script>
+</body>
+</html>

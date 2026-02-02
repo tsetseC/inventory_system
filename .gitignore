@@ -1,0 +1,16 @@
+venv/
+staticfiles/
+__pycache__/
+*.pyc
+db.sqlite3
+.env
+
+# ML artifacts (big files)
+*.pkl
+*.joblib
+ml/*.pkl
+ml/*.joblib
+inventory/models/*.joblib
+
+# Local collected static
+staticfiles/
