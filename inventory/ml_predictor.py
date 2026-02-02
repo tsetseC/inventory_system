@@ -1,33 +1,48 @@
 import os
 import joblib
-import pandas as pd
 
-MODEL_PATH = os.path.join("ml", "kaggle_demand_model.pkl")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL_PATH = os.path.join(BASE_DIR, "..", "ml", "kaggle_demand_model.pkl")
 
-# Load model
-model = joblib.load(MODEL_PATH)
 
-def predict_demand(input_data: dict):
+def load_model():
     """
-    input_data must include fields found in the Kaggle dataset:
-    'Store_ID', 'Product_ID', 'Category', 'Region', 'Inventory_Level',
-    'Units_Ordered', 'Demand_Forecast', 'Price', 'Discount',
-    'Weather_Condition', 'Holiday_Promotion', 'Competitor_Pricing',
-    'Seasonality', 'Date'
+    Load ML model safely.
+    If missing, return None instead of crashing deployment.
     """
+    if not os.path.exists(MODEL_PATH):
+        print(f"[WARNING] ML model not found at: {MODEL_PATH}")
+        return None
 
-    df = pd.DataFrame([input_data])
+    try:
+        return joblib.load(MODEL_PATH)
+    except Exception as e:
+        print(f"[ERROR] Failed to load ML model: {e}")
+        return None
 
-    # Date features
-    df["Date"] = pd.to_datetime(df["Date"])
-    df["Year"] = df["Date"].dt.year
-    df["Month"] = df["Date"].dt.month
-    df["Day"] = df["Date"].dt.day
-    df["DayOfWeek"] = df["Date"].dt.dayofweek
 
-    df = df.drop(columns=["Date"])
+MODEL = load_model()
 
-    # Run model
-    prediction = model.predict(df)[0]
 
-    return round(float(prediction), 2)
+def predict_demand(features):
+    """
+    Predict demand safely.
+    If MODEL is missing, return fallback result.
+    """
+    if MODEL is None:
+        return {
+            "prediction": None,
+            "status": "Model not available on server (missing file)."
+        }
+
+    try:
+        pred = MODEL.predict([features])[0]
+        return {
+            "prediction": float(pred),
+            "status": "Prediction successful"
+        }
+    except Exception as e:
+        return {
+            "prediction": None,
+            "status": f"Prediction failed: {str(e)}"
+        }

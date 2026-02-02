@@ -20,6 +20,7 @@ from .ml_predictor import predict_demand
 
 
 
+
 from django.views.decorators.http import require_POST
 from django.utils.dateparse import parse_datetime
 from django.http import JsonResponse
