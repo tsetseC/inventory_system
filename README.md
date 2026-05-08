@@ -61,8 +61,13 @@ RFID Scanner → Raspberry Pi → SQL Database → Analytics Dashboard → ML Fo
 ---
 
 ## 📸 Screenshots
+<img width="1920" height="1080" alt="Screenshot (276)" src="https://github.com/user-attachments/assets/32f5d5c7-8b8a-4313-9168-718e96945007" />
+<img width="1920" height="1080" alt="Screenshot (273)" src="https://github.com/user-attachments/assets/b766fde8-425b-401f-9605-2053b1126768" />
+<img width="1920" height="1080" alt="Screenshot (234)" src="https://github.com/user-attachments/assets/4cdb9459-b73f-4177-a6ee-67d8fbbc62d8" />
+<img width="1920" height="1080" alt="Screenshot (269)" src="https://github.com/user-attachments/assets/557727f7-5570-41db-bebe-d49c6ef396c6" />
+<img width="1920" height="1080" alt="Screenshot (268)" src="https://github.com/user-attachments/assets/b6abe9fa-ae12-4672-bec9-f5203fe1df78" />
+<img width="1920" height="1080" alt="Screenshot (272)" src="https://github.com/user-attachments/assets/3053737d-1dff-4944-9aa7-0fa88437a036" />
 
-> *(Add screenshots here — drag and drop images into this README on GitHub)*
 
 - Dashboard overview
 - RFID scan in action
