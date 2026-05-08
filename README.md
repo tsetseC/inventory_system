@@ -69,13 +69,6 @@ RFID Scanner → Raspberry Pi → SQL Database → Analytics Dashboard → ML Fo
 <img width="1920" height="1080" alt="Screenshot (272)" src="https://github.com/user-attachments/assets/3053737d-1dff-4944-9aa7-0fa88437a036" />
 
 
-- Dashboard overview
-- RFID scan in action
-- ML forecasting output
-- SQL data structure
-
----
-
 ## 🚀 How to Run
 
 1. Clone the repository
