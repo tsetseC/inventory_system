@@ -61,12 +61,25 @@ RFID Scanner → Raspberry Pi → SQL Database → Analytics Dashboard → ML Fo
 ---
 
 ## 📸 Screenshots
-<img width="1920" height="1080" alt="Screenshot (276)" src="https://github.com/user-attachments/assets/32f5d5c7-8b8a-4313-9168-718e96945007" />
-<img width="1920" height="1080" alt="Screenshot (273)" src="https://github.com/user-attachments/assets/b766fde8-425b-401f-9605-2053b1126768" />
-<img width="1920" height="1080" alt="Screenshot (234)" src="https://github.com/user-attachments/assets/4cdb9459-b73f-4177-a6ee-67d8fbbc62d8" />
-<img width="1920" height="1080" alt="Screenshot (269)" src="https://github.com/user-attachments/assets/557727f7-5570-41db-bebe-d49c6ef396c6" />
-<img width="1920" height="1080" alt="Screenshot (268)" src="https://github.com/user-attachments/assets/b6abe9fa-ae12-4672-bec9-f5203fe1df78" />
-<img width="1920" height="1080" alt="Screenshot (272)" src="https://github.com/user-attachments/assets/3053737d-1dff-4944-9aa7-0fa88437a036" />
+
+
+<img width="1920" height="1024" alt="Screenshot (253)" src="https://github.com/user-attachments/assets/b83f485d-3aef-4efc-8a2c-e5c3ff9439f8" />
+
+<img width="1920" height="1024" alt="Screenshot (255)" src="https://github.com/user-attachments/assets/43adf1a1-290e-4b48-af24-92264a4f75b9" />
+
+<img width="1920" height="1031" alt="Screenshot (269)" src="https://github.com/user-attachments/assets/1e038693-24f0-462b-b076-f67f6ea7b01e" />
+
+
+<img width="1920" height="1024" alt="Screenshot (261)" src="https://github.com/user-attachments/assets/dbfe598a-ecec-4453-85a9-3410a5bfc0db" />
+
+<img width="1920" height="1031" alt="Screenshot (265)" src="https://github.com/user-attachments/assets/0807ca9c-c5a9-48ea-97da-6c6d626d9384" />
+
+<img width="1920" height="1028" alt="Screenshot (273)" src="https://github.com/user-attachments/assets/2b0a22d3-7140-4b87-9c42-b84359316740" />
+
+<img width="1920" height="1035" alt="Screenshot (234)" src="https://github.com/user-attachments/assets/86cb8803-0a9a-4e2a-a568-2ce890fe2de0" />
+
+<img width="1920" height="1038" alt="Screenshot (272)" src="https://github.com/user-attachments/assets/97d653f5-2f52-4999-83a0-78ef1c82ea6e" />
+
 
 
 ## 🚀 How to Run
